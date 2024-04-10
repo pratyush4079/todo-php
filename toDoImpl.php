@@ -1,62 +1,65 @@
 <?php
-require_once "todo.php";
-class toDoImpl implements todo{
-    private $con;
-    public function __construct($con)
+require_once "Todo.php";
+class ToDoImpl implements todo{
+    private PDO $conn;
+    public function __construct(Database $database)
     {
-        $this->con=$con;
+        $this->conn= $database->getConnection();
 
     }
     public function create($data)
     {
-        $name=$_POST['name'];
-        $description=$_POST['description'];
-        $sql="INSERT INTO `task`.todo`( `name`, `description`, `date`) VALUES ('$name','$description',current_timestamp())";
-        if($this->con->query($sql))
-        {
-            
-        }
-        else{
-            echo("operation failed");
+        $sql = "INSERT INTO `task`.`todo` (`name`, `description`, `date`) VALUES (:name, :description, current_timestamp())";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(":name", $data["name"], PDO::PARAM_STR);
+        $stmt->bindValue(":description", $data["description"], PDO::PARAM_STR);
+
+        if ($stmt->execute()) {
+            echo $data["name"] . "\n";
+            echo $data["description"]."\n";
+            return true;
+        } else {
+            echo "Operation failed";
+            return false;
         }
     }
-    public function getAll(){
-        $sql="Select * FROM `task`.`todo`";
-        $result=mysqli_query($this->con,$sql);
-        $todos=[];
-        while ($row = mysqli_fetch_assoc($result)) {
-            $todos[] = $row;
+
+    public function getAll():array{
+        $sql= "SELECT * FROM todo";
+        $stmt = $this->conn->query($sql);
+        $data = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $data[] = $row;
         }
-        return $todos;
-
-
+        return $data;
     }
     public function getById($id){
-        $sql="Select * FROM `task`.`todo` WHERE id=$id";
-        $result=mysqli_query($this->con,$sql);
-        $todo=mysqli_fetch_assoc($result);
-        return $todo;
-
+        $sql = "SELECT * FROM `task`.`todo` WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(":id", $id, PDO::PARAM_INT);
+        $stmt->execute();
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $data;
     }
     public function delete($id)
-    {
-        $sql="DELETE FROM `task`.`todo` WHERE id=$id";
-        if($this->con->query($sql))
-        {
-        }
-        else{
-            echo("operation failed");
-        }
-    }
-    public function update($id,$data){
-        $name=$_POST['name'];
-        $description=$_POST['description'];
-        $sql="UPDATE `task`.`todo` SET `name`='$name',`description`='$description',`date`=current_timestamp() WHERE id=$id";
-        if($this->con->query($sql))
-        {
-        }
-        else{
-            echo("operation failed");
-        }
-    }
+{
+
+        $sql = "DELETE FROM `task`.`todo` WHERE id=:id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(":id", $id, PDO::PARAM_INT);
+        $stmt->execute();
+        return true;
+}
+public function update($id, $data)
+{
+
+        $sql = "UPDATE `task`.`todo` SET `name` = :name, `description` = :description WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindValue(":id", $id, PDO::PARAM_INT);
+        $stmt->bindValue(":name", $data["name"], PDO::PARAM_STR);
+        $stmt->bindValue(":description", $data["description"], PDO::PARAM_STR);
+        $stmt->execute();
+        return true; 
+}
+
 }
